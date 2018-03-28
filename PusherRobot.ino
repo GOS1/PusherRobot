@@ -7,7 +7,7 @@ float positions[] = {4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45}; //position
 int arraySize = 10; //?????? *NOTE: this seems to be working, but may need to change to " int arraySize=15; " ???????
 int revolutions = 0;
 float distancePerRevolution=2.6006;  //2.3622; //distance (inches) of timing belt travel per one 360deg (200step) rotation of 22-tooth, 3mm pitch drive gear **actual value = 6 cm
-int stepsPerRevolution=200; //motor's rated # steps per one revolution
+int stepsPerRevolution=800; //motor's rated # steps per one revolution
 
 AccelStepper stepper1( AccelStepper::DRIVER, 10, 11);
 
@@ -16,18 +16,19 @@ void setup() {
   Serial.println("Setting current position.");
   // Set initial stepper properties. 
   stepper1.setCurrentPosition(0);
-  stepper1.setMaxSpeed(500.0);
+  stepper1.setMaxSpeed(1500.0);
   stepper1.setAcceleration(500.0);
   Serial.println("Setup complete.");
 }
 
 void loop() {
-  delay(5000);
+  delay(3000);
   
   // Calculate a random position. 
   int randomPos = random(arraySize);
   float distance = positions[randomPos];
   int numSteps = distance/distancePerRevolution*stepsPerRevolution;
+  
   Serial.print("Position, Distance, NumSteps ");
   Serial.print(randomPos);
   Serial.print(", ");
@@ -40,7 +41,7 @@ void loop() {
   stepper1.move(numSteps);
   stepper1.runToPosition();
 
-  delay(1000);
+  delay(5000);
 
   Serial.println("Reached. Moving back to 0th position.");
 
