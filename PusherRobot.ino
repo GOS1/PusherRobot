@@ -24,7 +24,7 @@ enum State {
 };
 
 // For Home, we always do that in setup.
-State currentState = SEARCH;
+State currentState = FIND;
 
 // Initialize X & Y stepper motors. 
 AccelStepper xStepper( AccelStepper::DRIVER, 10, 11);
@@ -40,10 +40,12 @@ void setup() {
 
   // Configure y-stepper.
   yStepper.setCurrentPosition(0);
-  yStepper.setSpeed(500.0);
+  yStepper.setSpeed(250);
+//  yStepper.setMaxSpeed(2000.0);
+//  yStepper.setAcceleration(1000.0);
 
   // Home Y stepper motor first.  
-  homeYStepper();
+  //homeYStepper();
 
   // Configure x-stepper.
   xStepper.setCurrentPosition(currentXPosition);
@@ -51,54 +53,63 @@ void setup() {
   xStepper.setAcceleration(500.0);
 
   // Home X Stepper motor. 
-  homeXStepper();
+  //homeXStepper();
 
   Serial.println("Setup complete.");
 }
 
 void loop() {
-  delay(2000);
+  delay(1000);
 
-  if (currentState == SEARCH) {
-      // Calculate a random position, distance to go, and numSteps to get to that position.
-      int randomIdx = random(arraySize);
-      float distanceToGo = positions[randomIdx] - currentXPosition; // It could be +ve/-ve and that'll determine direction to go to.
-      int numSteps = distanceToGo/distancePerRevolution*stepsPerRevolution;
-    
-      // Print the current position. 
-      printPos(randomIdx, positions[randomIdx], numSteps);
-      
-      // Move to that random position. 
-      xStepper.move(numSteps);
-      xStepper.runToPosition();
-    
-      // Update my current position.
-      currentXPosition = positions[randomIdx]; 
-
-      // Change the state to FIND from here, so we come and move the yStepper from here. 
-  }
-
-  if (currentState == FIND) {
-     int ySteps = 1; 
-     // Move the motor into the slot.  
-     while (digitalRead(yFeedbackPin) == LOW) {
-        yStepper.moveTo(ySteps);
-        yStepper.run();
-        ySteps++;
-     }
-
-     // Switch is pressed. Move 1 full revolution into the slot. 
-     ySteps = stepsPerRevolution; 
-     yStepper.moveTo(ySteps);
-     while(yStepper.distanceToGo() != 0) {
-        yStepper.run();
-     }
-
-     // Home the stepper motor. 
-     homeYStepper();
-
-     // Change the state back to SEARCH from here, so we come and move the xStepper from here. 
-  }
+//  if (currentState == SEARCH) {
+//      // Calculate a random position, distance to go, and numSteps to get to that position.
+//      int randomIdx = random(arraySize);
+//      float distanceToGo = positions[randomIdx] - currentXPosition; // It could be +ve/-ve and that'll determine direction to go to.
+//      int numSteps = distanceToGo/distancePerRevolution*stepsPerRevolution;
+//    
+//      // Print the current position. 
+//      printPos(randomIdx, positions[randomIdx], numSteps);
+//      
+//      // Move to that random position. 
+//      xStepper.move(numSteps);
+//      xStepper.runToPosition();
+//    
+//      // Update my current position.
+//      currentXPosition = positions[randomIdx]; 
+//
+//      // Change the state to FIND from here, so we come and move the yStepper from here. 
+//  }
+//
+//  if (currentState == FIND) {
+//     int ySteps = 1; 
+//     // Move the motor into the slot.  
+//     while (digitalRead(yFeedbackPin) == LOW) {
+//        yStepper.moveTo(ySteps);
+//        yStepper.run();
+//        ySteps++;
+//     }
+//
+//     // Switch is pressed. Move 1 full revolution into the slot. 
+//     ySteps = stepsPerRevolution; 
+//     yStepper.moveTo(ySteps);
+//     while(yStepper.distanceToGo() != 0) {
+//        yStepper.run();
+//     }
+//
+//     // Home the stepper motor. 
+//     homeYStepper();
+//
+//     // Change the state back to SEARCH from here, so we come and move the xStepper from here. 
+//  }
+    Serial.println("Starting yStepping");
+    int ySteps = 2000;
+    yStepper.moveTo(ySteps);
+    yStepper.runSpeedToPosition();
+    Serial.println("Completed 10 revolutions.");
+    delay(1000);
+    yStepper.moveTo(-ySteps);
+    yStepper.runSpeedToPosition();
+    Serial.println("Moved back to the starting position.");
 }
 
 void homeXStepper() {
