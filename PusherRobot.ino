@@ -99,7 +99,7 @@ void loop() {
 //     }
 
       Serial.println("Moving y forward now.");
-      int ySteps = 16000;
+      int ySteps = 8000;
       yStepper.move(ySteps);
       yStepper.runToPosition();
       Serial.println("Done moving forward.");
