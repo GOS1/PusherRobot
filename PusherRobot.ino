@@ -7,7 +7,7 @@ float positions[] = {4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45}; //position
     //position index values stored as: 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
 int arraySize = 10; //?????? *NOTE: this seems to be working, but may need to change to " int arraySize=15; " ???????
 float distancePerRevolution=2.6006;  //2.3622; //distance (inches) of timing belt travel per one 360deg (200step) rotation of 22-tooth, 3mm pitch drive gear **actual value = 6 cm
-int stepsPerRevolution=800; //motor's rated # steps per one revolution
+int stepsPerRevolution=400; //motor's rated # steps per one revolution
 
 // Keep track of where I am, so I can calculate where I'd be going next. 
 float currentXPosition = 0;
@@ -40,9 +40,9 @@ void setup() {
 
   // Configure y-stepper.
   yStepper.setCurrentPosition(0);
-  yStepper.setSpeed(250);
-//  yStepper.setMaxSpeed(2000.0);
-//  yStepper.setAcceleration(1000.0);
+  //yStepper.setSpeed(1);
+  yStepper.setMaxSpeed(3000.0);
+  yStepper.setAcceleration(2000.0);
 
   // Home Y stepper motor first.  
   //homeYStepper();
@@ -102,14 +102,14 @@ void loop() {
 //     // Change the state back to SEARCH from here, so we come and move the xStepper from here. 
 //  }
     Serial.println("Starting yStepping");
-    int ySteps = 2000;
-    yStepper.moveTo(ySteps);
-    yStepper.runSpeedToPosition();
+    int ySteps = 16000;
+    yStepper.move(-ySteps);
+    yStepper.runToPosition();
     Serial.println("Completed 10 revolutions.");
     delay(1000);
-    yStepper.moveTo(-ySteps);
-    yStepper.runSpeedToPosition();
-    Serial.println("Moved back to the starting position.");
+//    yStepper.moveTo(-ySteps);
+//    yStepper.runToPosition();
+//    Serial.println("Moved back to the starting position.");
 }
 
 void homeXStepper() {
