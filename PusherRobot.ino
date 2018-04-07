@@ -13,9 +13,11 @@ int stepsPerRevolution=400; //motor's rated # steps per one revolution
 float currentXPosition = 0;
 
 // Feedback pin that gets activated when the y-stepper hits the object.
-const int yFeedbackPin = 2;
+const int yFeedbackPin = 4;
 const int xHomePin = 3; 
-const int yHomePin = 4; 
+const int yHomePin = 2; 
+
+boolean yFeedbackState = false;
 
 // States of the system. 
 enum State {
@@ -41,7 +43,7 @@ void setup() {
   // Configure y-stepper.
   yStepper.setCurrentPosition(0);
   //yStepper.setSpeed(1);
-  yStepper.setMaxSpeed(2500.0);
+  yStepper.setMaxSpeed(2000.0);
   yStepper.setAcceleration(15000.0);
 
   // Home Y stepper motor first.  
@@ -49,7 +51,7 @@ void setup() {
 
   // Configure x-stepper.
   xStepper.setCurrentPosition(currentXPosition);
-  xStepper.setMaxSpeed(1500.0);
+  xStepper.setMaxSpeed(000.0);
   xStepper.setAcceleration(500.0);
 
   // Home X Stepper motor. 
@@ -99,17 +101,42 @@ void loop() {
 //
 //     // Change the state back to SEARCH from here, so we come and move the xStepper from here. 
 //  }
-//    Serial.println("Starting yStepping");
-    int ySteps = 8000;
+
+    int ySteps = 16000;
     yStepper.move(-ySteps);
     yStepper.runToPosition();
-//    Serial.println("Completed 10 revolutions.");
-//    Serial.println("Starting yStepping");
-    ySteps = 8000;
-    yStepper.move(ySteps);
-    yStepper.runToPosition();
-//    Serial.println("Completed 10 revolutions.");
-//    delay(1000);
+    
+//    int ySteps = 1;
+     // Move the motor into the slot.  
+     while (!digitalRead(yFeedbackPin) == LOW) {
+        yStepper.move(ySteps);
+        yStepper.run();
+        ySteps++;
+     }
+
+     int distanceToGo = yStepper.distanceToGo();
+     int stepsToGoBack = ySteps - distanceToGo;
+
+     Serial.println(stepsToGoBack);
+     Serial.println("Hit something.");
+     yStepper.stop();
+
+     delay(2000);
+
+     yStepper.setMaxSpeed(500);
+
+     int newPushSteps = 2000;
+     yStepper.move(newPushSteps);
+     yStepper.runToPosition();
+
+     delay(2000);
+
+     yStepper.setMaxSpeed(3000);
+     yStepper.moveTo(-(stepsToGoBack));
+     Serial.println(yStepper.targetPosition());
+     yStepper.runToPosition();
+
+     delay(2000);
 }
 
 void homeXStepper() {
