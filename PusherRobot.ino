@@ -41,8 +41,8 @@ void setup() {
   // Configure y-stepper.
   yStepper.setCurrentPosition(0);
   //yStepper.setSpeed(1);
-  yStepper.setMaxSpeed(3000.0);
-  yStepper.setAcceleration(2000.0);
+  yStepper.setMaxSpeed(2500.0);
+  yStepper.setAcceleration(15000.0);
 
   // Home Y stepper motor first.  
   //homeYStepper();
@@ -59,8 +59,6 @@ void setup() {
 }
 
 void loop() {
-  delay(1000);
-
 //  if (currentState == SEARCH) {
 //      // Calculate a random position, distance to go, and numSteps to get to that position.
 //      int randomIdx = random(arraySize);
@@ -101,15 +99,17 @@ void loop() {
 //
 //     // Change the state back to SEARCH from here, so we come and move the xStepper from here. 
 //  }
-    Serial.println("Starting yStepping");
-    int ySteps = 16000;
+//    Serial.println("Starting yStepping");
+    int ySteps = 8000;
     yStepper.move(-ySteps);
     yStepper.runToPosition();
-    Serial.println("Completed 10 revolutions.");
-    delay(1000);
-//    yStepper.moveTo(-ySteps);
-//    yStepper.runToPosition();
-//    Serial.println("Moved back to the starting position.");
+//    Serial.println("Completed 10 revolutions.");
+//    Serial.println("Starting yStepping");
+    ySteps = 8000;
+    yStepper.move(ySteps);
+    yStepper.runToPosition();
+//    Serial.println("Completed 10 revolutions.");
+//    delay(1000);
 }
 
 void homeXStepper() {
