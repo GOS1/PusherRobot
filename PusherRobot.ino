@@ -43,7 +43,7 @@ void setup() {
   // Configure y-stepper.
   yStepper.setCurrentPosition(0);
   //yStepper.setSpeed(1);
-  yStepper.setMaxSpeed(2000.0);
+  yStepper.setMaxSpeed(3000.0);
   yStepper.setAcceleration(15000.0);
 
   // Home Y stepper motor first.  
@@ -132,7 +132,7 @@ void loop() {
      delay(2000);
 
      yStepper.setMaxSpeed(3000);
-     yStepper.moveTo(-(stepsToGoBack));
+     yStepper.moveTo(-(stepsToGoBack + newPushSteps));
      Serial.println(yStepper.targetPosition());
      yStepper.runToPosition();
 
