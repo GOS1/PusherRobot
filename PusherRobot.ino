@@ -40,21 +40,29 @@ void setup() {
   pinMode(xHomePin, INPUT);
   pinMode(yHomePin, INPUT);
 
+  Serial.println("yStepper homing begin.");
+
   // Home Y stepper motor.   
- // homeYStepper();
+  homeYStepper();
+
+  Serial.println("yStepper homing complete.");
 
   // Configure y-stepper for the rest of the system. 
   yStepper.setMaxSpeed(3000.0);
   yStepper.setAcceleration(15000.0);
 
+  delay(2000);
+
+  Serial.println("xStepper homing begin.");
+
   // Home X Stepper motor. 
-  // homeXStepper();
+  homeXStepper();
 
   // Configure x-stepper initial speeds. 
   xStepper.setMaxSpeed(3000.0);
-  xStepper.setAcceleration(500.0);
+  xStepper.setAcceleration(10500.0);
 
-  Serial.println("Setup complete.");
+  Serial.println("yStepper homing complete");
 }
 
 void loop() {
@@ -149,6 +157,10 @@ void loop() {
 }
 
 void homeXStepper() {
+  xStepper.setCurrentPosition(0);
+  xStepper.setMaxSpeed(500.0);
+  xStepper.setAcceleration(100.0);
+  
   // Move in the positive direction.
   int xSteps = 0; 
   
@@ -189,8 +201,6 @@ void homeYStepper() {
   // Reset ySteps now. 
   ySteps = 0; 
 
-  Serial.println("yStepper calibration: Hit the home switch.");
-
   delay(1000);
 
   while (digitalRead(yHomePin) == HIGH) { // Make the Stepper move clockwise until the homeSwitch is deactivated
@@ -201,8 +211,6 @@ void homeYStepper() {
 
   // We have found our 0 position. Boom. 
   yStepper.setCurrentPosition(0); 
-
-  Serial.println("yStepper calibration: Calibration complete.");
 }
 
 // Helper method to print where I am. 
