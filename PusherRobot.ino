@@ -14,8 +14,9 @@ float currentXPosition = 0;
 
 // Feedback pin that gets activated when the y-stepper hits the object.
 const int yFeedbackPin = 4;
-const int xHomePin = 3; 
-const int yHomePin = 2; 
+const int xHomePin = 2; 
+const int yHomePin = 3; 
+const int yForwardPin = 8; 
 
 boolean yFeedbackState = false;
 
@@ -26,7 +27,7 @@ enum State {
 };
 
 // For Home, we always do that in setup.
-State currentState = FIND;
+State currentState = SEARCH;
 
 // Initialize X & Y stepper motors. 
 AccelStepper xStepper( AccelStepper::DRIVER, 10, 11);
@@ -36,9 +37,10 @@ void setup() {
   Serial.begin(9600);
 
   // Set output pins. 
-  pinMode(yFeedbackPin, INPUT);
-  pinMode(xHomePin, INPUT);
-  pinMode(yHomePin, INPUT);
+  pinMode(yFeedbackPin, INPUT_PULLUP);
+  pinMode(xHomePin, INPUT_PULLUP);
+  pinMode(yHomePin, INPUT_PULLUP);
+  pinMode(yForwardPin, INPUT_PULLUP);
 
   Serial.println("yStepper homing begin.");
 
@@ -56,7 +58,7 @@ void setup() {
   Serial.println("xStepper homing begin.");
 
   // Home X Stepper motor. 
-  homeXStepper();
+  //homeXStepper();
 
   // Configure x-stepper initial speeds. 
   xStepper.setMaxSpeed(3000.0);
@@ -68,16 +70,26 @@ void setup() {
 void loop() {
     boolean xHomeState = digitalRead(xHomePin);
     boolean yHomeState = digitalRead(yHomePin);
-    boolean yFeedbackPin = digitalRead(yFeedbackPin); 
+    boolean yFeedbackState = !digitalRead(yFeedbackPin); 
+    boolean yForwardState = digitalRead(yForwardPin);
 
-    Serial.print("xHome, yHome, yFeedback: "); 
-    Serial.print(xHomePin);
-    Serial.print(", ");
-    Serial.print(yHomePin);
-    Serial.print(", ");
-    Serial.println(yFeedbackPin);
+    // Forward. 
+    if (yForwardState == LOW) {
+      moveYForward();
+    }
 
-    delay(2000);
+    Serial.print("xHome, yHome, yFeedback, yFowardPin: "); 
+    Serial.print(xHomeState);
+    Serial.print(", ");
+    Serial.print(yHomeState);
+    Serial.print(", ");
+    Serial.print(yFeedbackState);
+    Serial.print(", ");
+    Serial.println(yForwardState);
+
+    
+
+    delay(500);
     
 //  if (currentState == SEARCH) {
 //      // Calculate a random position, distance to go, and numSteps to get to that position.
@@ -119,7 +131,87 @@ void loop() {
 //
 //     // Change the state back to SEARCH from here, so we come and move the xStepper from here. 
 //  }
-//
+}
+
+void homeXStepper() {
+  xStepper.setCurrentPosition(0);
+  xStepper.setMaxSpeed(500.0);
+  xStepper.setAcceleration(100.0);
+  
+  // Move in the positive direction.
+  int xSteps = 0; 
+
+  // This is PULLUP so it's HIGH if it's not pressed. 
+  while (digitalRead(xHomePin) == HIGH) {  // Make the stepper move counterclockwise until the homeSwitch is activated.
+    xStepper.move(xSteps);  // Set the position to move to
+    xStepper.run();
+    xSteps--;  // Move all the way to the left for calibration. 
+  }
+
+  delay(1000);
+
+  xStepper.setCurrentPosition(0);
+  xSteps = 0; 
+
+  // This is PULLUP so it's LOW when it's pressed.
+  while (digitalRead(xHomePin) == LOW) { // Make the Stepper move clockwise until the homeSwitch is deactivated
+    xStepper.move(xSteps);
+    xStepper.run();
+    xSteps++; // increase by one for next move if needed
+  }
+
+  // Now set the current position. 
+  xStepper.setCurrentPosition(0);
+}
+
+void homeYStepper() {
+  // Set slower speeds for the yStepper. 
+  yStepper.setCurrentPosition(0);
+  yStepper.setMaxSpeed(1000.0);
+  yStepper.setAcceleration(200.0);
+  
+  // Steps to take in the y direction.
+  int ySteps = 0; 
+  
+  while (digitalRead(yHomePin) == HIGH) {  // Make the stepper move backward until the homeSwitch is activated.
+    yStepper.move(ySteps);  // Set the position to move to
+    yStepper.run();
+    ySteps--;  // Keep going backwards
+  }
+
+  delay(1000);
+
+  yStepper.setCurrentPosition(0);
+  ySteps = 0;
+  
+  while (digitalRead(yHomePin) == LOW) { // Make the Stepper move forward until the homeSwitch is deactivated
+    yStepper.move(ySteps);
+    yStepper.run();
+    ySteps++; // increase by one for next move if needed
+  }
+
+  // We have found our 0 position. Boom. 
+  yStepper.setCurrentPosition(0); 
+}
+
+// Helper method to print where I am. 
+void printPos(int idx, float distance, int numSteps) {
+  Serial.print("Destination: Position, Distance, NumSteps ");
+  Serial.print(idx);
+  Serial.print(", ");
+  Serial.print(distance);
+  Serial.print(", ");
+  Serial.println(numSteps);
+}
+
+void moveYForward() {
+  int ySteps = 8000; 
+  yStepper.move(ySteps);
+  yStepper.runToPosition();
+}
+
+// Some yStepper tuning code that we could use. 
+
 //    int ySteps = 16000;
 //    yStepper.move(-ySteps);
 //    yStepper.runToPosition();
@@ -154,72 +246,4 @@ void loop() {
 //   yStepper.runToPosition();
 //  
 //   delay(2000);
-}
-
-void homeXStepper() {
-  xStepper.setCurrentPosition(0);
-  xStepper.setMaxSpeed(500.0);
-  xStepper.setAcceleration(100.0);
-  
-  // Move in the positive direction.
-  int xSteps = 0; 
-  
-  while (digitalRead(xHomePin) == LOW) {  // Make the stepper move counterclockwise until the homeSwitch is activated.
-    xStepper.move(xSteps);  // Set the position to move to
-    xStepper.run();
-    xSteps--;  // Move all the way to the left for calibration. 
-  }
-
-  // Reset it to go backward so it releases the switch. 
-  xSteps = 0; 
-
-  while (digitalRead(xHomePin) == HIGH) { // Make the Stepper move clockwise until the homeSwitch is deactivated
-    xStepper.move(xSteps);
-    xStepper.run();
-    xSteps++; // increase by one for next move if needed
-  }
-
-  // Now set the current position. 
-  xStepper.setCurrentPosition(0);
-}
-
-void homeYStepper() {
-  // Set slower speeds for the yStepper. 
-  yStepper.setCurrentPosition(0);
-  yStepper.setMaxSpeed(500.0);
-  yStepper.setAcceleration(100.0);
-  
-  // Steps to take in the y direction.
-  int ySteps = 0; 
-  
-  while (digitalRead(yHomePin) == LOW) {  // Make the stepper move counterclockwise until the homeSwitch is activated.
-    yStepper.move(ySteps);  // Set the position to move to
-    yStepper.run();
-    ySteps--;  // Keep going backwards
-  }
-
-  // Reset ySteps now. 
-  ySteps = 0; 
-
-  delay(1000);
-
-  while (digitalRead(yHomePin) == HIGH) { // Make the Stepper move clockwise until the homeSwitch is deactivated
-    yStepper.move(ySteps);
-    yStepper.run();
-    ySteps++; // increase by one for next move if needed
-  }
-
-  // We have found our 0 position. Boom. 
-  yStepper.setCurrentPosition(0); 
-}
-
-// Helper method to print where I am. 
-void printPos(int idx, float distance, int numSteps) {
-  Serial.print("Destination: Position, Distance, NumSteps ");
-  Serial.print(idx);
-  Serial.print(", ");
-  Serial.print(distance);
-  Serial.print(", ");
-  Serial.println(numSteps);
-}
 
