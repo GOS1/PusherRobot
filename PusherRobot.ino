@@ -45,7 +45,7 @@ void setup() {
   Serial.println("yStepper homing begin.");
 
   // Home Y stepper motor.   
-  homeYStepper();
+  //homeYStepper();
 
   Serial.println("yStepper homing complete.");
 
@@ -58,11 +58,11 @@ void setup() {
   Serial.println("xStepper homing begin.");
 
   // Home X Stepper motor. 
-  //homeXStepper();
+  homeXStepper();
 
   // Configure x-stepper initial speeds. 
-  xStepper.setMaxSpeed(3000.0);
-  xStepper.setAcceleration(10500.0);
+  xStepper.setMaxSpeed(20000.0);
+  xStepper.setAcceleration(2000.0);
 
   Serial.println("yStepper homing complete");
 }
@@ -75,7 +75,7 @@ void loop() {
 
     // Forward. 
     if (yForwardState == LOW) {
-      moveYForward();
+      moveXForward();
     }
 
     Serial.print("xHome, yHome, yFeedback, yFowardPin: "); 
@@ -86,8 +86,6 @@ void loop() {
     Serial.print(yFeedbackState);
     Serial.print(", ");
     Serial.println(yForwardState);
-
-    
 
     delay(500);
     
@@ -135,8 +133,8 @@ void loop() {
 
 void homeXStepper() {
   xStepper.setCurrentPosition(0);
-  xStepper.setMaxSpeed(500.0);
-  xStepper.setAcceleration(100.0);
+  xStepper.setMaxSpeed(1000.0);
+  xStepper.setAcceleration(500.0);
   
   // Move in the positive direction.
   int xSteps = 0; 
@@ -204,10 +202,20 @@ void printPos(int idx, float distance, int numSteps) {
   Serial.println(numSteps);
 }
 
+// Testing Homing. 
 void moveYForward() {
   int ySteps = 8000; 
   yStepper.move(ySteps);
   yStepper.runToPosition();
+}
+
+// Testing Homing. 
+void moveXForward() {
+  Serial.println("Move x Forward");
+  int xSteps = 20000; 
+  xStepper.move(xSteps);
+  xStepper.runToPosition();
+  Serial.println("There.");
 }
 
 // Some yStepper tuning code that we could use. 
