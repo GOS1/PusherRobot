@@ -203,6 +203,7 @@ void homeSystem() {
   homeXStepper();
   setXYStepperSpeeds();
   currentState = SEARCH;
+  currentXPosition = 0;
 }
 
 void setXYStepperSpeeds() {
