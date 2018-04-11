@@ -1,13 +1,13 @@
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 
-float positions[] = {4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45}; //positions in inches measured from "home" position
+const float positions[] = {4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45}; //positions in inches measured from "home" position
     // [NOTE] Only using 11 positions to start with right now. 
     //positions are 4.5" (11.43 cm) apart, on center************THESE POSITIONS WILL NEED TO BE ADJUSTED BY OFFSET FROM HOME POSITION->POSITION 1
     //position index values stored as: 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
-int arraySize = 10; //?????? *NOTE: this seems to be working, but may need to change to " int arraySize=15; " ???????
-float distancePerRevolution=2.6006; //distance (inches) of timing belt travel per one 360deg (200step) rotation of 22-tooth, 3mm pitch drive gear **actual value = 6 cm
-int stepsPerRevolution=3200; // motor's rated # steps per one revolution (1/16th Microstep)
+const int arraySize = 10; //?????? *NOTE: this seems to be working, but may need to change to " int arraySize=15; " ???????
+const float distancePerRevolution=2.6006; //distance (inches) of timing belt travel per one 360deg (200step) rotation of 22-tooth, 3mm pitch drive gear **actual value = 6 cm
+const long stepsPerRevolution=3200; // motor's rated # steps per one revolution (1/16th Microstep)
 
 // Keep track of where I am, so I can calculate where I'd be going next. 
 float currentXPosition = 0;
@@ -42,6 +42,8 @@ void setup() {
 
   // Home the system.
   homeSystem();
+
+  Serial.println("Homed.");
 }
 
 void loop() {
@@ -51,7 +53,7 @@ void loop() {
     boolean resetState = digitalRead(resetPin);
 
     // Forward. 
-    if (yForwardState == LOW) {
+    if (resetState == LOW) {
       homeSystem();
     }
 
@@ -65,10 +67,15 @@ void loop() {
     Serial.println(resetState);
     
     if (currentState == SEARCH) {
+        Serial.println("SEARCHING.");
+        Serial.println(currentXPosition);
         // Calculate a random position, distance to go, and numSteps to get to that position.
         int randomIdx = random(arraySize);
-        float distanceToGo = positions[randomIdx] - currentXPosition; // It could be +ve/-ve and that'll determine direction to go to.
-        int numSteps = distanceToGo/distancePerRevolution*stepsPerRevolution;
+        float distance = positions[randomIdx] - currentXPosition; // It could be +ve/-ve and that'll determine direction to go to.
+        Serial.println(positions[randomIdx]);
+        Serial.println(distance);
+        long numSteps = (distance * stepsPerRevolution) / distancePerRevolution;
+        Serial.println(numSteps);
       
         // Print the current position. 
         printPos(randomIdx, positions[randomIdx], numSteps);
@@ -104,19 +111,21 @@ void loop() {
 
        // Move 1000 steps in and 1000 steps back. 
 
-      int ySteps = 8000;
-      yStepper.move(ySteps);
-      yStepper.runToPosition();
-      delay(2000);
-      yStepper.move(-ySteps);
-  
-      currentState = SEARCH;
+        int ySteps = 8000;
+        yStepper.move(ySteps);
+        yStepper.runToPosition();
+        delay(2000);
+        yStepper.move(-ySteps);
+        yStepper.runToPosition();
+        currentState = SEARCH;
     }
 
     delay(500);
 }
 
 void homeXStepper() {
+  Serial.println("Homing X.");
+  
   xStepper.setCurrentPosition(0);
   xStepper.setMaxSpeed(1000.0);
   xStepper.setAcceleration(500.0);
@@ -148,6 +157,8 @@ void homeXStepper() {
 }
 
 void homeYStepper() {
+  Serial.println("Homing Y");
+  
   // Set slower speeds for the yStepper. 
   yStepper.setCurrentPosition(0);
   yStepper.setMaxSpeed(1000.0);
@@ -178,7 +189,7 @@ void homeYStepper() {
 }
 
 // Helper method to print where I am. 
-void printPos(int idx, float distance, int numSteps) {
+void printPos(int idx, float distance, float numSteps) {
   Serial.print("Destination: Position, Distance, NumSteps ");
   Serial.print(idx);
   Serial.print(", ");
@@ -188,9 +199,10 @@ void printPos(int idx, float distance, int numSteps) {
 }
 
 void homeSystem() {
-  homeXStepper();
   homeYStepper();
+  homeXStepper();
   setXYStepperSpeeds();
+  currentState = SEARCH;
 }
 
 void setXYStepperSpeeds() {
