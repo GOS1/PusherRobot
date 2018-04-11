@@ -103,8 +103,14 @@ void loop() {
 //       homeYStepper();
 
        // Move 1000 steps in and 1000 steps back. 
+
+      int ySteps = 8000;
+      yStepper.move(ySteps);
+      yStepper.runToPosition();
+      delay(2000);
+      yStepper.move(-ySteps);
   
-       currentState = SEARCH;
+      currentState = SEARCH;
     }
 
     delay(500);
