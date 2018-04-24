@@ -16,7 +16,6 @@ float currentXPosition = 0;
 const int yFeedbackPin = 4;
 const int xHomePin = 2; 
 const int yHomePin = 3; 
-const int resetPin = 8; 
 
 // States of the system. 
 enum State {
@@ -38,7 +37,6 @@ void setup() {
   pinMode(yFeedbackPin, INPUT_PULLUP);
   pinMode(xHomePin, INPUT_PULLUP);
   pinMode(yHomePin, INPUT_PULLUP);
-  pinMode(resetPin, INPUT_PULLUP);
 
   // Home the system.
   homeSystem();
@@ -50,12 +48,6 @@ void loop() {
     boolean xHomeState = digitalRead(xHomePin);
     boolean yHomeState = digitalRead(yHomePin);
     boolean yFeedbackState = !digitalRead(yFeedbackPin); 
-    boolean resetState = digitalRead(resetPin);
-
-    // Forward. 
-    if (resetState == LOW) {
-      homeSystem();
-    }
 
     Serial.print("xHome, yHome, yFeedback, yFowardPin: "); 
     Serial.print(xHomeState);
@@ -63,8 +55,6 @@ void loop() {
     Serial.print(yHomeState);
     Serial.print(", ");
     Serial.print(yFeedbackState);
-    Serial.print(", ");
-    Serial.println(resetState);
     
     if (currentState == SEARCH) {
         Serial.println("SEARCHING.");
@@ -230,6 +220,10 @@ void moveXForward() {
   xStepper.move(xSteps);
   xStepper.runToPosition();
   Serial.println("There.");
+}
+
+void calibrateX() {
+  
 }
 
 // Some yStepper tuning code that we could use. 
