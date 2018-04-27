@@ -30,6 +30,7 @@ enum State {
 State currentState = SEARCH;
 
 unsigned long trackTime; 
+long resetHomeTime = 60000; // 60 seconds = 1 minutes 
 
 // Initialize X & Y stepper motors. 
 AccelStepper xStepper( AccelStepper::DRIVER, 10, 11); // Pulse, Direction
@@ -53,7 +54,7 @@ void loop() {
 
     // Track time, so
     unsigned long currentTime = millis() - trackTime;
-    if (currentTime > 1000) {
+    if (currentTime > resetHomeTime) {
       homeSystem();
     }
     
