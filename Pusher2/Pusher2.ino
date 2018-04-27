@@ -30,7 +30,7 @@ enum State {
 State currentState = SEARCH;
 
 unsigned long trackTime; 
-long resetHomeTime = 60000; // 60 seconds = 1 minutes 
+long resetHomeTime = 2 * 60  * 1000; // 2 minutes
 
 // Initialize X & Y stepper motors. 
 AccelStepper xStepper( AccelStepper::DRIVER, 10, 11); // Pulse, Direction
@@ -60,8 +60,8 @@ void loop() {
     
     if (currentState == SEARCH) {
         // X-stepper search speed. 
-        xStepper.setMaxSpeed(2000.0);
-        xStepper.setAcceleration(2000.0);
+        xStepper.setMaxSpeed(200.0);
+        xStepper.setAcceleration(5000.0);
         
         // Calculate a random position, distance to go, and numSteps to get to that position.
         int randomIdx = random(arraySize);
@@ -84,8 +84,8 @@ void loop() {
   
     if (currentState == FIND) {
        // Configure y-stepper speed for FIND state. 
-       yStepper.setMaxSpeed(1000.0);
-       yStepper.setAcceleration(2000.0);
+       yStepper.setMaxSpeed(200.0);
+       yStepper.setAcceleration(5000.0);
        
        int ySteps = 0; 
        // Move y actuator into the slot.   
@@ -104,8 +104,8 @@ void loop() {
        // So, push forward a little bit. Else, home back. 
        if (yStepper.currentPosition() < maxYSteps) {
             // Set speed for pushing mechanism.
-            yStepper.setMaxSpeed(500.0);
-            yStepper.setAcceleration(1000.0);
+            yStepper.setMaxSpeed(100.0);
+            yStepper.setAcceleration(500.0);
             
             yStepper.move(yStepsPerRevolution/2);
             yStepper.runToPosition();
@@ -129,8 +129,8 @@ void homeXStepper() {
   xStepper.setCurrentPosition(0);
 
   // Set homing speed.  
-  xStepper.setMaxSpeed(1000.0);
-  xStepper.setAcceleration(1000.0);
+  xStepper.setMaxSpeed(500.0); // Low speed.
+  xStepper.setAcceleration(3000.0); // High acceleration.
   
   // Move in the positive direction.
   int xSteps = 0; 
@@ -165,8 +165,8 @@ void homeYStepper() {
 
   // Set homing speed for y. 
   // Have a higher acceleration since it needs that to start. 
-  yStepper.setMaxSpeed(1000.0);
-  yStepper.setAcceleration(2000.0);
+  yStepper.setMaxSpeed(500.0);
+  yStepper.setAcceleration(3000.0);
   
   // Steps to take in the y direction.
   int ySteps = 0; 
