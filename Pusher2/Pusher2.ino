@@ -84,11 +84,11 @@ void loop() {
   
     if (currentState == FIND) {
        // Configure y-stepper speed for FIND state. 
-       yStepper.setMaxSpeed(200.0);
+       yStepper.setMaxSpeed(500.0);
        yStepper.setAcceleration(5000.0);
        
        int ySteps = 0; 
-       // Move y actuator into the slot.   
+       // Move y actuator into the slot. Make sure we don't exceed maxYSteps.  
        while (digitalRead(yFeedbackPin) == HIGH && yStepper.currentPosition() < maxYSteps) {
           yStepper.moveTo(ySteps);
           yStepper.run();
@@ -166,7 +166,7 @@ void homeYStepper() {
   // Set homing speed for y. 
   // Have a higher acceleration since it needs that to start. 
   yStepper.setMaxSpeed(500.0);
-  yStepper.setAcceleration(3000.0);
+  yStepper.setAcceleration(2000.0);
   
   // Steps to take in the y direction.
   int ySteps = 0; 

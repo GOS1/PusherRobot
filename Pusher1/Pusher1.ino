@@ -88,7 +88,7 @@ void loop() {
        yStepper.setAcceleration(2000.0);
        
        int ySteps = 0; 
-       // Move y actuator into the slot.   
+       // Move y actuator into the slot.Make sure we don't exceed maxYSteps. 
        while (digitalRead(yFeedbackPin) == HIGH && yStepper.currentPosition() < maxYSteps) {
           yStepper.moveTo(ySteps);
           yStepper.run();
