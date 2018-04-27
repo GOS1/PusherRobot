@@ -32,6 +32,11 @@ State currentState = SEARCH;
 unsigned long trackTime; 
 long resetHomeTime = 2 * 60  * 1000; // 2 minutes
 
+unsigned long crosstalkTimeX = -1;
+unsigned long crosstalkTimeYHome = -1;
+unsigned long crosstalkTimeYFeed = -1;
+const int long crosstalkMillis = 100; 
+
 // Initialize X & Y stepper motors. 
 AccelStepper xStepper( AccelStepper::DRIVER, 10, 11); // Pulse, Direction
 AccelStepper yStepper( AccelStepper::DRIVER, 5, 6); // Pulse, Direction
@@ -89,7 +94,7 @@ void loop() {
        
        int ySteps = 0; 
        // Move y actuator into the slot. Make sure we don't exceed maxYSteps.  
-       while (digitalRead(yFeedbackPin) == HIGH && yStepper.currentPosition() < maxYSteps) {
+       while (ifYFeedbackButtonNotPressed() && yStepper.currentPosition() < maxYSteps) {
           yStepper.moveTo(ySteps);
           yStepper.run();
           ySteps++;
@@ -135,7 +140,7 @@ void homeXStepper() {
   // Move in the positive direction.
   int xSteps = 0; 
   // This is PULLUP so it's HIGH if it's not pressed. 
-  while (digitalRead(xHomePin) == HIGH) {  // Make the stepper move counterclockwise until the homeSwitch is activated.
+  while (ifXHomeButtonNotPressed()) {  // Make the stepper move counterclockwise until the homeSwitch is activated.
     xStepper.move(xSteps);  // Set the position to move to
     xStepper.run();
     xSteps--;  // Move all the way to the left for calibration. 
@@ -171,7 +176,7 @@ void homeYStepper() {
   // Steps to take in the y direction.
   int ySteps = 0; 
   // This is PULLUP so it's HIGH if it's not pressed. 
-  while (digitalRead(yHomePin) == HIGH) {  // Make the stepper move backward until the homeSwitch is activated.
+  while (ifYHomeButtonNotPressed()) {  // Make the stepper move backward until the homeSwitch is activated.
     yStepper.move(ySteps);  // Set the position to move to
     yStepper.run();
     ySteps--;  // Keep going backwards
@@ -196,9 +201,95 @@ void homeYStepper() {
   yStepper.setCurrentPosition(0); 
 }
 
+// Crosstalk when switch is not on. 
+// When it's on it was pulling good current. 
+// By default, it's pulled UP.
+boolean ifXHomeButtonNotPressed () {
+  while (digitalRead(xHomePin) == HIGH) {
+    return true; 
+  }
+
+  while (digitalRead(xHomePin) == LOW) {
+    // If time hasn't been set. 
+    if (crosstalkTimeX == -1) {
+      crosstalkTimeX = millis();
+    }
+
+    if (millis() - crosstalkTimeX > crosstalkMillis) {
+      break;
+    }
+  }
+
+  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
+  // Return true. 
+  if (crosstalkTimeX > crosstalkMillis) { 
+    // It read HIGH for 100 milliseconds. 
+    crosstalkTimeX = -1; 
+    return false; 
+  } else {
+    // Oh no, it was a cross talk high for a very short time. 
+    return true;
+  }
+}
+
+boolean ifYHomeButtonNotPressed () {
+  while (digitalRead(yHomePin) == HIGH) {
+    return true; 
+  }
+
+  while (digitalRead(yHomePin) == LOW) {
+    // If time hasn't been set. 
+    if (crosstalkTimeYHome == -1) {
+      crosstalkTimeYHome = millis();
+    }
+
+    if (millis() - crosstalkTimeYHome > crosstalkMillis) {
+      break;
+    }
+  }
+
+  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
+  // Return true. 
+  if (crosstalkTimeYHome > crosstalkMillis) { 
+    // It read HIGH for 100 milliseconds. 
+    crosstalkTimeYHome = -1; 
+    return false; 
+  } else {
+    // Oh no, it was a cross talk high for a very short time. 
+    return true;
+  }
+}
+
+boolean ifYFeedbackButtonNotPressed () {
+  while (digitalRead(yFeedbackPin) == HIGH) {
+    return true; 
+  }
+
+  while (digitalRead(yFeedbackPin) == LOW) {
+    // If time hasn't been set. 
+    if (crosstalkTimeYFeed == -1) {
+      crosstalkTimeYFeed = millis();
+    }
+
+    if (millis() - crosstalkTimeYFeed > crosstalkMillis) {
+      break;
+    }
+  }
+
+  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
+  // Return true. 
+  if (crosstalkTimeYFeed > crosstalkMillis) { 
+    // It read HIGH for 100 milliseconds. 
+    crosstalkTimeYFeed = -1; 
+    return false; 
+  } else {
+    // Oh no, it was a cross talk high for a very short time. 
+    return true;
+  }
+}
+
 // Home the system. 
 void homeSystem() {
-  Serial.println("Starting homing.");
   homeYStepper();
   homeXStepper();
   currentState = SEARCH;
