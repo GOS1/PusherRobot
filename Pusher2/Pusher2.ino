@@ -1,11 +1,11 @@
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 
-const float positions[] = {4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45}; //positions in inches measured from "home" position
+const float positions[] = {4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45, 49.5, 54, 59.5, 64, 69.5}; //positions in inches measured from "home" position
     // [NOTE] Only using 11 positions to start with right now. 
     //positions are 4.5" (11.43 cm) apart, on center************THESE POSITIONS WILL NEED TO BE ADJUSTED BY OFFSET FROM HOME POSITION->POSITION 1
     //position index values stored as: 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
-const int arraySize = 10; //?????? *NOTE: this seems to be working, but may need to change to " int arraySize=15; " ???????
+const int arraySize = 15; //?????? *NOTE: this seems to be working, but may need to change to " int arraySize=15; " ???????
 const float distancePerRevolution=2.6006; //distance (inches) of timing belt travel per one 360deg (200step) rotation of 22-tooth, 3mm pitch drive gear **actual value = 6 cm
 const long stepsPerRevolution=3200; // motor's rated # steps per one revolution (1/16th Microstep)
 
@@ -23,6 +23,9 @@ enum State {
   SEARCH,
   FIND
 };
+
+const long maxYSteps = 33508;
+const long yStepsPerRevolution = 400;
 
 // For Home, we always do that in setup.
 State currentState = SEARCH;
@@ -42,43 +45,38 @@ void setup() {
 
   // Home the system.
   homeSystem();
-
-  Serial.println("Homed.");
 }
 
 void loop() {
     boolean xHomeState = digitalRead(xHomePin);
     boolean yHomeState = digitalRead(yHomePin);
-    boolean yFeedbackState = !digitalRead(yFeedbackPin); 
+    boolean yFeedbackState = digitalRead(yFeedbackPin); 
     boolean resetState = digitalRead(resetPin);
-
-    // Forward. 
-    if (resetState == LOW) {
-      homeSystem();
-    }
-
-    Serial.print("xHome, yHome, yFeedback, yFowardPin: "); 
-    Serial.print(xHomeState);
-    Serial.print(", ");
-    Serial.print(yHomeState);
-    Serial.print(", ");
-    Serial.print(yFeedbackState);
-    Serial.print(", ");
-    Serial.println(resetState);
-    
+//
+//    Serial.print("xHome, yHome, yFeedback, yFowardPin: "); 
+//    Serial.print(xHomeState);
+//    Serial.print(", ");
+//    Serial.print(yHomeState);
+//    Serial.print(", ");
+//    Serial.print(yFeedbackState);
+//    Serial.print(", ");
+//    Serial.println(resetState);
+//    
     if (currentState == SEARCH) {
-        Serial.println("SEARCHING.");
-        Serial.println(currentXPosition);
+        // Configure x-stepper initial speeds. 
+        xStepper.setMaxSpeed(20000.0);
+        xStepper.setAcceleration(2000.0);
+        
         // Calculate a random position, distance to go, and numSteps to get to that position.
         int randomIdx = random(arraySize);
         float distance = positions[randomIdx] - currentXPosition; // It could be +ve/-ve and that'll determine direction to go to.
-        Serial.println(positions[randomIdx]);
-        Serial.println(distance);
+//        Serial.println(positions[randomIdx]);
+//        Serial.println(distance);
         long numSteps = (distance * stepsPerRevolution) / distancePerRevolution;
-        Serial.println(numSteps);
+//        Serial.println(numSteps);
       
         // Print the current position. 
-        printPos(randomIdx, positions[randomIdx], numSteps);
+//        printPos(randomIdx, positions[randomIdx], numSteps);
         
         // Move to that random position. 
         xStepper.move(numSteps);
@@ -91,44 +89,46 @@ void loop() {
     }
   
     if (currentState == FIND) {
-//       int ySteps = 1; 
-//       // Move the motor into the slot.  
-//       while (digitalRead(yFeedbackPin) == LOW) {
-//          yStepper.moveTo(ySteps);
-//          yStepper.run();
-//          ySteps++;
-//       }
-//  
-//       // Switch is pressed. Move 1 full revolution into the slot. 
-//       ySteps = stepsPerRevolution; 
-//       yStepper.moveTo(ySteps);
-//       while(yStepper.distanceToGo() != 0) {
-//          yStepper.run();
-//       }
-//  
-//       // Home the stepper motor. 
-//       homeYStepper();
+       // Configure y-stepper for the rest of the system. 
+       yStepper.setMaxSpeed(1000.0);
+       yStepper.setAcceleration(2000.0);
+       
+       int ySteps = 0; 
+       // Move the motor into the slot.  
+       while (digitalRead(yFeedbackPin) == HIGH && yStepper.currentPosition() < maxYSteps) {
+          yStepper.moveTo(ySteps);
+          yStepper.run();
+          ySteps++;
+       }
 
-       // Move 1000 steps in and 1000 steps back. 
+       // If we haven't reached the maxYSteps, then we have detected something. 
+       // So, push forward a little bit. Else, home back. 
+       if (yStepper.currentPosition() < maxYSteps) {
+            yStepper.stop();
+            
+            delay(1000);
 
-        int ySteps = 8000;
-        yStepper.move(ySteps);
-        yStepper.runToPosition();
-        delay(2000);
-        yStepper.move(-ySteps);
-        yStepper.runToPosition();
-        currentState = SEARCH;
+            // Move ySteps. 
+            yStepper.setMaxSpeed(1000.0);
+            yStepper.setAcceleration(2000.0);
+            yStepper.move(yStepsPerRevolution/2);
+            yStepper.runToPosition();
+       } else {
+          yStepper.stop();
+          delay(1000);
+       }
+
+       homeYStepper();
+       currentState = SEARCH;
     }
 
     delay(500);
 }
 
 void homeXStepper() {
-  Serial.println("Homing X.");
-  
   xStepper.setCurrentPosition(0);
   xStepper.setMaxSpeed(1000.0);
-  xStepper.setAcceleration(500.0);
+  xStepper.setAcceleration(1000.0);
   
   // Move in the positive direction.
   int xSteps = 0; 
@@ -140,7 +140,7 @@ void homeXStepper() {
     xSteps--;  // Move all the way to the left for calibration. 
   }
 
-  delay(1000);
+  delay(2000);
 
   xStepper.setCurrentPosition(0);
   xSteps = 0; 
@@ -157,12 +157,10 @@ void homeXStepper() {
 }
 
 void homeYStepper() {
-  Serial.println("Homing Y");
-  
   // Set slower speeds for the yStepper. 
   yStepper.setCurrentPosition(0);
   yStepper.setMaxSpeed(1000.0);
-  yStepper.setAcceleration(200.0);
+  yStepper.setAcceleration(2000.0);
   
   // Steps to take in the y direction.
   int ySteps = 0; 
@@ -173,7 +171,7 @@ void homeYStepper() {
     ySteps--;  // Keep going backwards
   }
 
-  delay(1000);
+  delay(2000);
 
   yStepper.setCurrentPosition(0);
   ySteps = 0;
@@ -201,26 +199,23 @@ void printPos(int idx, float distance, float numSteps) {
 void homeSystem() {
   homeYStepper();
   homeXStepper();
-  setXYStepperSpeeds();
   currentState = SEARCH;
   currentXPosition = 0;
 }
 
-void setXYStepperSpeeds() {
-  // Configure y-stepper for the rest of the system. 
-  yStepper.setMaxSpeed(3000.0);
-  yStepper.setAcceleration(15000.0);
-
-  // Configure x-stepper initial speeds. 
-  xStepper.setMaxSpeed(20000.0);
-  xStepper.setAcceleration(2000.0);
-}
-
 // Testing Homing. 
 void moveYForward() {
-  int ySteps = 8000; 
-  yStepper.move(ySteps);
-  yStepper.runToPosition();
+   float ySteps = 0; 
+   
+   // Move the motor into the slot.  
+   while (digitalRead(yFeedbackPin) == HIGH) {
+      yStepper.moveTo(ySteps);
+      yStepper.run();
+      ySteps++;
+   }
+
+   Serial.print("Distance:");
+   Serial.println(yStepper.currentPosition());
 }
 
 // Testing Homing. 
