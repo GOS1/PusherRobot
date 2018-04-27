@@ -187,15 +187,8 @@ void homeYStepper() {
 }
 
 // Helper method to print where I am. 
-void printPos(int idx, float distance, float numSteps) {
-  Serial.print("Destination: Position, Distance, NumSteps ");
-  Serial.print(idx);
-  Serial.print(", ");
-  Serial.print(distance);
-  Serial.print(", ");
-  Serial.println(numSteps);
-}
 
+// Home the system. 
 void homeSystem() {
   homeYStepper();
   homeXStepper();
@@ -203,64 +196,30 @@ void homeSystem() {
   currentXPosition = 0;
 }
 
-// Testing Homing. 
-void moveYForward() {
-   float ySteps = 0; 
-   
-   // Move the motor into the slot.  
-   while (digitalRead(yFeedbackPin) == HIGH) {
-      yStepper.moveTo(ySteps);
-      yStepper.run();
-      ySteps++;
-   }
+//void printPos(int idx, float distance, float numSteps) {
+//  Serial.print("Destination: Position, Distance, NumSteps ");
+//  Serial.print(idx);
+//  Serial.print(", ");
+//  Serial.print(distance);
+//  Serial.print(", ");
+//  Serial.println(numSteps);
+//}
 
-   Serial.print("Distance:");
-   Serial.println(yStepper.currentPosition());
-}
-
-// Testing Homing. 
-void moveXForward() {
-  Serial.println("Move x Forward");
-  int xSteps = 20000; 
-  xStepper.move(xSteps);
-  xStepper.runToPosition();
-  Serial.println("There.");
-}
-
-// Some yStepper tuning code that we could use. 
-
-//    int ySteps = 16000;
-//    yStepper.move(-ySteps);
-//    yStepper.runToPosition();
-//    
+//// Testing Homing. 
+//void moveYForward() {
+//   float ySteps = 0; 
 //   // Move the motor into the slot.  
-//   while (!digitalRead(yFeedbackPin) == LOW) {
-//      yStepper.move(ySteps);
+//   while (digitalRead(yFeedbackPin) == HIGH) {
+//      yStepper.moveTo(ySteps);
 //      yStepper.run();
 //      ySteps++;
 //   }
-//  
-//   int distanceToGo = yStepper.distanceToGo();
-//   int stepsToGoBack = ySteps - distanceToGo;
-//  
-//   Serial.println(stepsToGoBack);
-//   Serial.println("Hit something.");
-//   yStepper.stop();
-//  
-//   delay(2000);
-//  
-//   yStepper.setMaxSpeed(500);
-//  
-//   int newPushSteps = 2000;
-//   yStepper.move(newPushSteps);
-//   yStepper.runToPosition();
-//  
-//   delay(2000);
-//  
-//   yStepper.setMaxSpeed(3000);
-//   yStepper.moveTo(-(stepsToGoBack + newPushSteps));
-//   Serial.println(yStepper.targetPosition());
-//   yStepper.runToPosition();
-//  
-//   delay(2000);
+//}
+//
+//// Testing Homing. 
+//void moveXForward() {
+//  int xSteps = 20000; 
+//  xStepper.move(xSteps);
+//  xStepper.runToPosition();
+//}
 
