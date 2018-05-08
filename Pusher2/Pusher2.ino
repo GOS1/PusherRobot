@@ -2,13 +2,13 @@
 #include <MultiStepper.h>
 
 // 0 - 14 indices for all the position 
-const float positions[] = {0, 4.5, 9.0, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45, 49.5, 54, 59.5, 64}; //positions in inches measured from "home" position
+const float positions[] = {0, 4.5, 9.0, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45, 49.5, 54, 58.5, 63}; //positions in inches measured from "home" position
     // positions are 4.5" (11.43 cm) apart,
 const int arraySize = 15; 
-const float distancePerRevolution=2.6006; // distance (inches) per revolution (360). This is calculated during calibration of the motor for this machine. 
+const float distancePerRevolution=2.6006; // CAUTION: CHange this. // distance (inches) per revolution (360). This is calculated during calibration of the motor for this machine. 
 
 const long xStepsPerRevolution=3200; // X motor's rated # steps per one revolution (1/32nd Microstep)
-const long maxYSteps=33500; // Max steps we want to go out before we decide to come back. 
+const long maxYSteps=33100; // Max steps we want to go out before we decide to come back. 
 const long yStepsPerRevolution=400; // Y motor's rated # steps per one revolution (1/4th Microstep)
 
 // Keep track of where I am, so I can calculate where I'd be going next. 
@@ -29,8 +29,8 @@ enum State {
 // We do an initial homing in setup.
 State currentState = SEARCH;
 
-unsigned long trackTime; 
-long resetHomeTime = 2 * 60  * 1000; // 2 minutes
+long trackTime; 
+long resetHomeTime = 20 * 60  * 1000; // 2 minutes
 
 unsigned long crosstalkTimeX = -1;
 unsigned long crosstalkTimeYHome = -1;
@@ -45,9 +45,9 @@ void setup() {
   Serial.begin(9600);
 
   // Set output pins. 
-  pinMode(yFeedbackPin, INPUT_PULLUP);
-  pinMode(xHomePin, INPUT_PULLUP);
-  pinMode(yHomePin, INPUT_PULLUP);
+  pinMode(yFeedbackPin, INPUT);
+  pinMode(xHomePin, INPUT);
+  pinMode(yHomePin, INPUT);
   
   // Home the system as soon as we start. 
   homeSystem();
@@ -58,14 +58,14 @@ void loop() {
     // printSwitches(); 
 
     // Track time, so
-    unsigned long currentTime = millis() - trackTime;
-    if (currentTime > resetHomeTime) {
-      homeSystem();
-    }
+//    long currentTime = millis() - trackTime;
+//    if (currentTime > resetHomeTime) {
+//      homeSystem();
+//    }
     
     if (currentState == SEARCH) {
         // X-stepper search speed. 
-        xStepper.setMaxSpeed(200.0);
+        xStepper.setMaxSpeed(2000.0);
         xStepper.setAcceleration(5000.0);
         
         // Calculate a random position, distance to go, and numSteps to get to that position.
@@ -74,7 +74,7 @@ void loop() {
         long numSteps = (distance * xStepsPerRevolution) / distancePerRevolution;
       
         // Print the current position. 
-        printPos(randomIdx, positions[randomIdx], numSteps);
+//        printPos(randomIdx, positions[randomIdx], numSteps);
         
         // Move to that random position. 
         xStepper.move(numSteps);
@@ -89,12 +89,12 @@ void loop() {
   
     if (currentState == FIND) {
        // Configure y-stepper speed for FIND state. 
-       yStepper.setMaxSpeed(500.0);
+       yStepper.setMaxSpeed(1000.0);
        yStepper.setAcceleration(5000.0);
        
        int ySteps = 0; 
        // Move y actuator into the slot. Make sure we don't exceed maxYSteps.  
-       while (ifYFeedbackButtonNotPressed() && yStepper.currentPosition() < maxYSteps) {
+       while (digitalRead(yFeedbackPin) == HIGH && yStepper.currentPosition() < maxYSteps) {
           yStepper.moveTo(ySteps);
           yStepper.run();
           ySteps++;
@@ -109,10 +109,10 @@ void loop() {
        // So, push forward a little bit. Else, home back. 
        if (yStepper.currentPosition() < maxYSteps) {
             // Set speed for pushing mechanism.
-            yStepper.setMaxSpeed(100.0);
-            yStepper.setAcceleration(500.0);
+            yStepper.setMaxSpeed(1000.0);
+            yStepper.setAcceleration(5000.0);
             
-            yStepper.move(yStepsPerRevolution/2);
+            yStepper.move(yStepsPerRevolution * 0.75);
             yStepper.runToPosition();
 
             // After the push, stop the motor and wait for a bit. 
@@ -140,7 +140,7 @@ void homeXStepper() {
   // Move in the positive direction.
   int xSteps = 0; 
   // This is PULLUP so it's HIGH if it's not pressed. 
-  while (ifXHomeButtonNotPressed()) {  // Make the stepper move counterclockwise until the homeSwitch is activated.
+  while (digitalRead(xHomePin) == HIGH) {  // Make the stepper move counterclockwise until the homeSwitch is activated.
     xStepper.move(xSteps);  // Set the position to move to
     xStepper.run();
     xSteps--;  // Move all the way to the left for calibration. 
@@ -170,13 +170,13 @@ void homeYStepper() {
 
   // Set homing speed for y. 
   // Have a higher acceleration since it needs that to start. 
-  yStepper.setMaxSpeed(500.0);
-  yStepper.setAcceleration(2000.0);
+  yStepper.setMaxSpeed(1000.0);
+  yStepper.setAcceleration(5000.0);
   
   // Steps to take in the y direction.
   int ySteps = 0; 
   // This is PULLUP so it's HIGH if it's not pressed. 
-  while (ifYHomeButtonNotPressed()) {  // Make the stepper move backward until the homeSwitch is activated.
+  while (digitalRead(yHomePin) == HIGH) {  // Make the stepper move backward until the homeSwitch is activated.
     yStepper.move(ySteps);  // Set the position to move to
     yStepper.run();
     ySteps--;  // Keep going backwards
@@ -204,89 +204,89 @@ void homeYStepper() {
 // Crosstalk when switch is not on. 
 // When it's on it was pulling good current. 
 // By default, it's pulled UP.
-boolean ifXHomeButtonNotPressed () {
-  while (digitalRead(xHomePin) == HIGH) {
-    return true; 
-  }
+//boolean ifXHomeButtonNotPressed () {
+//  while (digitalRead(xHomePin) == HIGH) {
+//    return true; 
+//  }
+//
+//  while (digitalRead(xHomePin) == LOW) {
+//    // If time hasn't been set. 
+//    if (crosstalkTimeX == -1) {
+//      crosstalkTimeX = millis();
+//    }
+//
+//    if (millis() - crosstalkTimeX > crosstalkMillis) {
+//      break;
+//    }
+//  }
+//
+//  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
+//  // Return true. 
+//  if (crosstalkTimeX > crosstalkMillis) { 
+//    // It read HIGH for 100 milliseconds. 
+//    crosstalkTimeX = -1; 
+//    return false; 
+//  } else {
+//    // Oh no, it was a cross talk high for a very short time. 
+//    return true;
+//  }
+//}
 
-  while (digitalRead(xHomePin) == LOW) {
-    // If time hasn't been set. 
-    if (crosstalkTimeX == -1) {
-      crosstalkTimeX = millis();
-    }
-
-    if (millis() - crosstalkTimeX > crosstalkMillis) {
-      break;
-    }
-  }
-
-  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
-  // Return true. 
-  if (crosstalkTimeX > crosstalkMillis) { 
-    // It read HIGH for 100 milliseconds. 
-    crosstalkTimeX = -1; 
-    return false; 
-  } else {
-    // Oh no, it was a cross talk high for a very short time. 
-    return true;
-  }
-}
-
-boolean ifYHomeButtonNotPressed () {
-  while (digitalRead(yHomePin) == HIGH) {
-    return true; 
-  }
-
-  while (digitalRead(yHomePin) == LOW) {
-    // If time hasn't been set. 
-    if (crosstalkTimeYHome == -1) {
-      crosstalkTimeYHome = millis();
-    }
-
-    if (millis() - crosstalkTimeYHome > crosstalkMillis) {
-      break;
-    }
-  }
-
-  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
-  // Return true. 
-  if (crosstalkTimeYHome > crosstalkMillis) { 
-    // It read HIGH for 100 milliseconds. 
-    crosstalkTimeYHome = -1; 
-    return false; 
-  } else {
-    // Oh no, it was a cross talk high for a very short time. 
-    return true;
-  }
-}
-
-boolean ifYFeedbackButtonNotPressed () {
-  while (digitalRead(yFeedbackPin) == HIGH) {
-    return true; 
-  }
-
-  while (digitalRead(yFeedbackPin) == LOW) {
-    // If time hasn't been set. 
-    if (crosstalkTimeYFeed == -1) {
-      crosstalkTimeYFeed = millis();
-    }
-
-    if (millis() - crosstalkTimeYFeed > crosstalkMillis) {
-      break;
-    }
-  }
-
-  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
-  // Return true. 
-  if (crosstalkTimeYFeed > crosstalkMillis) { 
-    // It read HIGH for 100 milliseconds. 
-    crosstalkTimeYFeed = -1; 
-    return false; 
-  } else {
-    // Oh no, it was a cross talk high for a very short time. 
-    return true;
-  }
-}
+//boolean ifYHomeButtonNotPressed () {
+//  while (digitalRead(yHomePin) == HIGH) {
+//    return true; 
+//  }
+//
+//  while (digitalRead(yHomePin) == LOW) {
+//    // If time hasn't been set. 
+//    if (crosstalkTimeYHome == -1) {
+//      crosstalkTimeYHome = millis();
+//    }
+//
+//    if (millis() - crosstalkTimeYHome > crosstalkMillis) {
+//      break;
+//    }
+//  }
+//
+//  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
+//  // Return true. 
+//  if (crosstalkTimeYHome > crosstalkMillis) { 
+//    // It read HIGH for 100 milliseconds. 
+//    crosstalkTimeYHome = -1; 
+//    return false; 
+//  } else {
+//    // Oh no, it was a cross talk high for a very short time. 
+//    return true;
+//  }
+//}
+//
+//boolean ifYFeedbackButtonNotPressed () {
+//  while (digitalRead(yFeedbackPin) == HIGH) {
+//    return true; 
+//  }
+//
+//  while (digitalRead(yFeedbackPin) == LOW) {
+//    // If time hasn't been set. 
+//    if (crosstalkTimeYFeed == -1) {
+//      crosstalkTimeYFeed = millis();
+//    }
+//
+//    if (millis() - crosstalkTimeYFeed > crosstalkMillis) {
+//      break;
+//    }
+//  }
+//
+//  // So the signal was high for more thatn 100 milliseconds, so it's really high. 
+//  // Return true. 
+//  if (crosstalkTimeYFeed > crosstalkMillis) { 
+//    // It read HIGH for 100 milliseconds. 
+//    crosstalkTimeYFeed = -1; 
+//    return false; 
+//  } else {
+//    // Oh no, it was a cross talk high for a very short time. 
+//    return true;
+//  }
+//}
 
 // Home the system. 
 void homeSystem() {
